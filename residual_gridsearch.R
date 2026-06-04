@@ -19,15 +19,15 @@ niter_tvp <- 15000
 nburn_tvp <- 7000
 
 tvp_predictors <- c(
-  "cpi_lag1", "cpi_lag2", "cpi_lag3",# "cpi_lag12",
+  "cpi_lag1", "cpi_lag2", "cpi_lag3", "cpi_lag12",
   "usd_rub_log_mom",
   "business_climate_cbr",
   "unemployment_rate",
-  paste0("month_", 2:12)
+  # paste0("month_", 2:12)
 )
 
 ml_predictors <- c(
-  "cpi_lag1", "cpi_lag2", "cpi_lag3",# "cpi_lag12",
+  "cpi_lag1", "cpi_lag2", "cpi_lag3", "cpi_lag12",
   "m2_log_mom",
   "usd_rub_log_mom",
   "brent_log_mom",
@@ -35,7 +35,7 @@ ml_predictors <- c(
   "unemployment_rate",
   "ppi_construction_mm",
   "ffpi_food_log_mom",
-  paste0("month_", 2:12)
+  #paste0("month_", 2:12)
 )
 
 ols_predictors <- tvp_predictors
@@ -49,7 +49,6 @@ ols_formula <- as.formula(
 min_ml_obs <- 48
 xgb_nrounds <- 150
 xgb_eta <- 0.03
-#xgb_subsample <- 0.8
 xgb_colsample_bytree <- 0.8
 xgb_max_depth_default <- 3L
 xgb_max_depth_restricted <- 2L
@@ -60,8 +59,6 @@ hybrid_variants <- c("last10y", "weighted", "shallow", "unrestricted")
 hybrid_base_models <- c("TVP", "AR3", "OLS")
 
 # дополнительные XGB-параметры для GridSearch
-# если хотите строго 1-в-1 поведение fixed_train.R, оставьте эти дефолты
-# и не варьируйте их в сетке
 xgb_min_child_weight <- 1
 xgb_gamma <- 0
 xgb_lambda <- 1
@@ -82,31 +79,13 @@ learning_curves_dir <- "residual_hybrid_learning_curves"
 # =========================================================
 # 1. GRID FOR RESIDUAL HYBRIDS
 # =========================================================
-# Пример полной сетки:
-# residual_xgb_grid <- tidyr::expand_grid(
-#   max_depth_default = c(3L, 4L),
-#   max_depth_restricted = c(2L),
-#   nrounds = c(100L, 150L, 300L),
-#   eta = c(0.01, 0.03),
-#   subsample = c(0.8),
-#   colsample_bytree = c(0.5, 0.8),
-#   min_child_weight = c(1, 5),
-#   gamma = c(0, 0.1, 0.5),
-#   lambda = c(1, 2, 5),
-#   alpha = c(0, 0.1, 1),
-#   max_delta_step = c(0)
-# ) %>%
-#   mutate(config_id = row_number()) %>%
-#   select(config_id, everything())
 
-#!!!! СОХРАНЯЕМ h=1 OLS+ML
 residual_xgb_grid <- tidyr::expand_grid(
   max_depth_default = c(2L),
   max_depth_restricted = c(2L),
-  #max_depth = c(2L),
-  nrounds = c(400L),  #точка после которой на test начинается деградация
+  max_depth = c(2L),
+  nrounds = c(400L),
   eta = c(0.02),
-  #subsample = c(0.7, 0.8),
   colsample_bytree = c(0.4),
   min_child_weight = c(5),
   gamma = c(0.2),
@@ -116,240 +95,6 @@ residual_xgb_grid <- tidyr::expand_grid(
 ) %>%
   mutate(config_id = row_number()) %>%
   select(config_id, everything())
-
-#!!!! СОХРАНЯЕМ h=1 AR+ML
-# residual_xgb_grid <- tidyr::expand_grid(
-#   max_depth_default = c(2L),
-#   max_depth_restricted = c(2L),
-#   #max_depth = c(2L),
-#   nrounds = c(400L),  #точка после которой на test начинается деградация
-#   eta = c(0.02),
-#   #subsample = c(0.7, 0.8),
-#   colsample_bytree = c(0.4),
-#   min_child_weight = c(5),
-#   gamma = c(0.2),
-#   lambda = c(0.1),
-#   alpha = c(0),
-#   max_delta_step = c(0)
-# ) %>%
-#   mutate(config_id = row_number()) %>%
-#   select(config_id, everything())
-
-#!!!! СОХРАНЯЕМ h=1 TVP+ML
-# residual_xgb_grid <- tidyr::expand_grid(
-#   max_depth_default = c(2L),
-#   max_depth_restricted = c(2L),
-#   #max_depth = c(2L),
-#   nrounds = c(450L),  #точка после которой на test начинается деградация
-#   eta = c(0.02),
-#   #subsample = c(0.7, 0.8),
-#   colsample_bytree = c(0.2),
-#   min_child_weight = c(5),
-#   gamma = c(0.4),
-#   lambda = c(0),
-#   alpha = c(0),
-#   max_delta_step = c(0)
-# ) %>%
-#   mutate(config_id = row_number()) %>%
-#   select(config_id, everything())
-
-#!!!! СОХРАНЯЕМ h=3 AR+ML
-# residual_xgb_grid <- tidyr::expand_grid(
-#   max_depth_default = c(2L),
-#   max_depth_restricted = c(2L),
-#   #max_depth = c(2L),
-#   nrounds = c(400L),  #точка после которой на test начинается деградация
-#   eta = c(0.01),
-#   #subsample = c(0.7, 0.8),
-#   colsample_bytree = c(0.7),
-#   min_child_weight = c(15),
-#   gamma = c(1),
-#   lambda = c(10),
-#   alpha = c(1),
-#   max_delta_step = c(3)
-# ) %>%
-#   mutate(config_id = row_number()) %>%
-#   select(config_id, everything())
-
-#!!!! СОХРАНЯЕМ h=3 OLS+ML
-# residual_xgb_grid <- tidyr::expand_grid(
-#   max_depth_default = c(2L),
-#   max_depth_restricted = c(2L),
-#   #max_depth = c(2L),
-#   nrounds = c(400L),  #точка после которой на test начинается деградация
-#   eta = c(0.02),
-#   #subsample = c(0.7, 0.8),
-#   colsample_bytree = c(0.4),
-#   min_child_weight = c(5),
-#   gamma = c(0.2),
-#   lambda = c(0.1),
-#   alpha = c(0),
-#   max_delta_step = c(0)
-# ) %>%
-#   mutate(config_id = row_number()) %>%
-#   select(config_id, everything())
-
-#!!!! СОХРАНЯЕМ h=3 TVP+ML
-# residual_xgb_grid <- tidyr::expand_grid(
-#   max_depth_default = c(2L),
-#   max_depth_restricted = c(2L),
-#   #max_depth = c(2L),
-#   nrounds = c(400L),  #точка после которой на test начинается деградация
-#   eta = c(0.03),
-#   #subsample = c(0.7, 0.8),
-#   colsample_bytree = c(0.6),
-#   min_child_weight = c(5),
-#   gamma = c(0.2),
-#   lambda = c(0.5),
-#   alpha = c(0),
-#   max_delta_step = c(0)
-# ) %>%
-#   mutate(config_id = row_number()) %>%
-#   select(config_id, everything())
-
-#!!!! СОХРАНЯЕМ h=6 TVP+ML
-# residual_xgb_grid <- tidyr::expand_grid(
-#   max_depth_default = c(2L),
-#   max_depth_restricted = c(2L),
-#   #max_depth = c(2L),
-#   nrounds = c(400L),  #точка после которой на test начинается деградация
-#   eta = c(0.01),
-#   #subsample = c(0.7, 0.8),
-#   colsample_bytree = c(0.7),
-#   min_child_weight = c(15),
-#   gamma = c(1.7),
-#   lambda = c(300),
-#   alpha = c(4),
-#   max_delta_step = c(3)
-# ) %>%
-#   mutate(config_id = row_number()) %>%
-#   select(config_id, everything())
-
-
-# !!!! СОХРАНЯЕМ h=6 AR+ML
-# residual_xgb_grid <- tidyr::expand_grid(
-#   max_depth_default = c(2L),
-#   max_depth_restricted = c(2L),
-#   #max_depth = c(2L),
-#   nrounds = c(400L),  #точка после которой на test начинается деградация
-#   eta = c(0.05),
-#   #subsample = c(0.7, 0.8),
-#   colsample_bytree = c(0.9),
-#   min_child_weight = c(15),
-#   gamma = c(0.5),
-#   lambda = c(200),
-#   alpha = c(5),
-#   max_delta_step = c(3)
-# ) %>%
-#   mutate(config_id = row_number()) %>%
-#   select(config_id, everything())
-
-# !!!! СОХРАНЯЕМ h=6 OLS+ML
-# residual_xgb_grid <- tidyr::expand_grid(
-#   max_depth_default = c(2L),
-#   max_depth_restricted = c(2L),
-#   #max_depth = c(2L),
-#   nrounds = c(400L),  #точка после которой на test начинается деградация
-#   eta = c(0.05),
-#   #subsample = c(0.7, 0.8),
-#   colsample_bytree = c(0.9),
-#   min_child_weight = c(15),
-#   gamma = c(0.5),
-#   lambda = c(200),
-#   alpha = c(5),
-#   max_delta_step = c(3)
-# ) %>%
-#   mutate(config_id = row_number()) %>%
-#   select(config_id, everything())
-
-# !!!! СОХРАНЯЕМ h=12 TVP+ML unrestricted
-# residual_xgb_grid <- tidyr::expand_grid(
-#   max_depth_default = c(2L),
-#   max_depth_restricted = c(2L),
-#   #max_depth = c(2L),
-#   nrounds = c(400L),  #точка после которой на test начинается деградация
-#   eta = c(0.05),
-#   #subsample = c(0.7, 0.8),
-#   colsample_bytree = c(0.3),
-#   min_child_weight = c(10),
-#   gamma = c(0.1),
-#   lambda = c(200),
-#   alpha = c(1),
-#   max_delta_step = c(0)
-# ) %>%
-#   mutate(config_id = row_number()) %>%
-#   select(config_id, everything())
-
-# !!!! СОХРАНЯЕМ h=12 OLS+ML unrestricted
-# residual_xgb_grid <- tidyr::expand_grid(
-#   max_depth_default = c(2L),
-#   max_depth_restricted = c(2L),
-#   #max_depth = c(2L),
-#   nrounds = c(400L),  #точка после которой на test начинается деградация
-#   eta = c(0.05),
-#   #subsample = c(0.7, 0.8),
-#   colsample_bytree = c(0.3),
-#   min_child_weight = c(10),
-#   gamma = c(0.1),
-#   lambda = c(200),
-#   alpha = c(1),
-#   max_delta_step = c(0)
-# ) %>%
-#   mutate(config_id = row_number()) %>%
-#   select(config_id, everything())
-
-# !!!! СОХРАНЯЕМ h=12 AR+ML shallow
-# residual_xgb_grid <- tidyr::expand_grid(
-#   max_depth_default = c(2L),
-#   max_depth_restricted = c(2L),
-#   #max_depth = c(2L),
-#   nrounds = c(800L),  #точка после которой на test начинается деградация
-#   eta = c(0.03),
-#   #subsample = c(0.7, 0.8),
-#   colsample_bytree = c(0.5),
-#   min_child_weight = c(10),
-#   gamma = c(0.7),
-#   lambda = c(70),
-#   alpha = c(0.7),
-#   max_delta_step = c(3)
-# ) %>%
-#   mutate(config_id = row_number()) %>%
-#   select(config_id, everything())
-
-# !!!! СОХРАНЯЕМ h=12 AR+ML unrestricted
-# residual_xgb_grid <- tidyr::expand_grid(
-#   max_depth_default = c(2L),
-#   max_depth_restricted = c(2L),
-#   #max_depth = c(2L),
-#   nrounds = c(800L),  #точка после которой на test начинается деградация
-#   eta = c(0.03),
-#   #subsample = c(0.7, 0.8),
-#   colsample_bytree = c(0.5),
-#   min_child_weight = c(10),
-#   gamma = c(0.7),
-#   lambda = c(70),
-#   alpha = c(0.7),
-#   max_delta_step = c(3)
-# ) %>%
-#   mutate(config_id = row_number()) %>%
-#   select(config_id, everything())
-
-# residual_xgb_grid <- tidyr::expand_grid(
-#   max_depth_default = c(2L),
-#   max_depth_restricted = c(2L),
-#   #max_depth = c(2L),
-#   nrounds = c(450L),  #точка после которой на test начинается деградация
-#   eta = c(0.02),
-#   #subsample = c(0.7, 0.8),
-#   colsample_bytree = c(0.2),
-#   min_child_weight = c(5),
-#   gamma = c(0.4),
-#   lambda = c(0),
-#   alpha = c(0),
-#   max_delta_step = c(0)
-# ) %>%
-#   mutate(config_id = row_number()) %>%
-#   select(config_id, everything())
 
 # =========================================================
 # 2. DATA
@@ -908,7 +653,6 @@ run_residual_hybrid_fixed_one_h <- function(train_base_results, test_base_result
                                             max_depth_restricted = xgb_max_depth_restricted,
                                             nrounds = xgb_nrounds,
                                             eta = xgb_eta,
-                                            #subsample = xgb_subsample,
                                             colsample_bytree = xgb_colsample_bytree,
                                             min_child_weight = xgb_min_child_weight,
                                             gamma = xgb_gamma,
@@ -930,7 +674,6 @@ run_residual_hybrid_fixed_one_h <- function(train_base_results, test_base_result
     min_obs = min_obs,
     nrounds = nrounds,
     eta = eta,
-    #subsample = subsample,
     colsample_bytree = colsample_bytree,
     min_child_weight = min_child_weight,
     gamma = gamma,
@@ -1056,7 +799,6 @@ run_residual_hybrid_grid_search <- function(data,
       " | max_depth_restricted=", cfg$max_depth_restricted,
       " | nrounds=", cfg$nrounds,
       " | eta=", cfg$eta,
-      #" | subsample=", cfg$subsample,
       " | colsample_bytree=", cfg$colsample_bytree,
       " | min_child_weight=", cfg$min_child_weight,
       " | gamma=", cfg$gamma,
@@ -1127,7 +869,6 @@ run_residual_hybrid_grid_search <- function(data,
               max_depth_restricted = cfg$max_depth_restricted[[1]],
               nrounds = cfg$nrounds[[1]],
               eta = cfg$eta[[1]],
-              #subsample = cfg$subsample[[1]],
               colsample_bytree = cfg$colsample_bytree[[1]],
               min_child_weight = cfg$min_child_weight[[1]],
               gamma = cfg$gamma[[1]],
