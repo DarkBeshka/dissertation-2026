@@ -1,8 +1,6 @@
-# Установка и подключение пакета
-# install.packages("forecast")
+install.packages("forecast")
 library(forecast)
 
-# Загрузка данных
 ar3_res <- read.csv("ран который в дипломе/fixed_ar3_residual_hybrid_unrestricted_test_h12.csv",     sep = ";",
                     dec = ",",
                     stringsAsFactors = FALSE,
@@ -13,10 +11,8 @@ ar3_dir <- read.csv("ран который в дипломе/fixed_tvp_direct_hy
                     check.names = FALSE,   fileEncoding = "CP1251")
 xgb     <- read.csv("ран который в дипломе/fixed_xgb_direct_base_test_h12.csv", fileEncoding = "CP1251")
 
-# Фактические значения
 y <- ar3_res$actual
 
-# Прогнозы моделей
 fc_ar3_res <- ar3_res$forecast_hybrid_residual
 fc_ar3_dir <- ar3_dir$forecast_hybrid
 fc_ar3     <- base$forecast_ar3
@@ -24,7 +20,6 @@ fc_ols     <- base$forecast_ols
 fc_tvp     <- base$forecast_tvp
 fc_xgb     <- xgb$forecast_xgb
 
-# Функция для безопасного DM-теста (убираем NA)
 run_dm <- function(f1, f2, y) {
   idx <- complete.cases(f1, f2, y)
   dm.test(
@@ -54,7 +49,6 @@ dm_dir_vs_all <- list(
   AR3_residual = run_dm(fc_ar3_dir, fc_ar3_res, y)
 )
 
-# Преобразование в таблицу
 extract_results <- function(dm_list, base_name) {
   data.frame(
     Model_1 = base_name,
