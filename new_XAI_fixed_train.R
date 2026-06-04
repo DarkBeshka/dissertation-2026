@@ -21,15 +21,15 @@ niter_tvp <- 15000
 nburn_tvp <- 7000
 
 tvp_predictors <- c(
-  "cpi_lag1", "cpi_lag2", "cpi_lag3", #"cpi_seasdiff_12",
+  "cpi_lag1", "cpi_lag2", "cpi_lag3", "cpi_seasdiff_12",
   "usd_rub_log_mom",
   "business_climate_cbr",
   "unemployment_rate",
-  paste0("month_", 2:12)
+  #paste0("month_", 2:12)
 )
 
 ml_predictors <- c(
-  "cpi_lag1", "cpi_lag2", "cpi_lag3",# "cpi_seasdiff_12",
+  "cpi_lag1", "cpi_lag2", "cpi_lag3", "cpi_seasdiff_12",
   "m2_log_mom",
   "usd_rub_log_mom",
   "brent_log_mom",
@@ -37,7 +37,7 @@ ml_predictors <- c(
   "unemployment_rate",
   "ppi_construction_mm",
   "ffpi_food_log_mom",
-  paste0("month_", 2:12)
+  #paste0("month_", 2:12)
   
 )
 
@@ -71,7 +71,6 @@ direct_hybrid_variants <- c(
   "rolling_rmse",
   "linear_meta",
   "regime_threshold"
-  # "anchor_adjustment"
 )
 
 fixed_weight_base_h1 <- 0.60
@@ -86,10 +85,6 @@ linear_meta_min_obs <- 24
 regime_inflation_threshold <- 1.0
 regime_weight_base_normal <- 0.70
 regime_weight_base_stress <- 0.30
-
-anchor_window_months <- 12
-anchor_gamma_lower <- 0.00
-anchor_gamma_upper <- 1.00
 
 # XAI: ALE / Interaction
 ale_grid_size <- 20L
@@ -203,13 +198,6 @@ data <- read_csv("dataset_for_model_long.csv", show_col_types = FALSE) %>%
   mutate(date = as.Date(date)) %>%
   arrange(date)
 
-# data <- data %>%
-#   arrange(date) %>%
-#   mutate(
-#     cpi_lag12 = lag(cpi_mm, 12),
-#     cpi_seasdiff_12 = cpi_mm - lag(cpi_mm, 12)
-#   )
-
 data <- data %>%
   arrange(date) %>%
   mutate(
@@ -247,7 +235,6 @@ remove_shock_periods <- function(df, shock_tbl) {
   df[keep_idx, , drop = FALSE]
 }
 
-# потом вырезаем шоковые периоды вместе с защитным буфером
 data <- remove_shock_periods(data, shock_periods_expanded) %>%
   arrange(date)
 
@@ -453,8 +440,6 @@ normalize_beta_list <- function(beta_obj, predictor_names, fit_colnames = NULL) 
   beta_names <- gsub("^\\(Intercept\\)$", "Intercept", beta_names)
   names(beta_list) <- beta_names
   
-  # Если fit_colnames есть, можно использовать его для диагностики,
-  # но не делать обязательным.
   if (!is.null(fit_colnames)) {
     fit_colnames <- gsub("^\\(Intercept\\)$", "Intercept", fit_colnames)
   }
@@ -1356,12 +1341,12 @@ run_fixed_base_models_one_h <- function(data, h,
   ar3_test  <- predict_lm_fixed(ar3_fit, test_df, "forecast_ar3")
   
   # ARIMA
-  arima_fit <- fit_arima_direct(train_df)
-  arima_train <- train_df %>%
-    select(date, y_h) %>%
-    rename(forecast_origin = date, actual = y_h) %>%
-    mutate(forecast_arima = NA_real_)
-  arima_test <- predict_arima_fixed(arima_fit, test_df)
+  # arima_fit <- fit_arima_direct(train_df)
+  # arima_train <- train_df %>%
+  #   select(date, y_h) %>%
+  #   rename(forecast_origin = date, actual = y_h) %>%
+  #   mutate(forecast_arima = NA_real_)
+  # arima_test <- predict_arima_fixed(arima_fit, test_df)
   
   train_results <- train_df %>%
     select(date, y_h) %>%
@@ -1369,7 +1354,7 @@ run_fixed_base_models_one_h <- function(data, h,
     left_join(tvp_train$results %>% select(forecast_origin, forecast_tvp), by = "forecast_origin") %>%
     left_join(ols_train %>% select(forecast_origin, forecast_ols), by = "forecast_origin") %>%
     left_join(ar3_train %>% select(forecast_origin, forecast_ar3), by = "forecast_origin") %>%
-    left_join(arima_train %>% select(forecast_origin, forecast_arima), by = "forecast_origin") %>%
+    # left_join(arima_train %>% select(forecast_origin, forecast_arima), by = "forecast_origin") %>%
     mutate(horizon = h) %>%
     arrange(forecast_origin)
   
@@ -1379,7 +1364,7 @@ run_fixed_base_models_one_h <- function(data, h,
     left_join(tvp_test$results %>% select(forecast_origin, forecast_tvp), by = "forecast_origin") %>%
     left_join(ols_test %>% select(forecast_origin, forecast_ols), by = "forecast_origin") %>%
     left_join(ar3_test %>% select(forecast_origin, forecast_ar3), by = "forecast_origin") %>%
-    left_join(arima_test %>% select(forecast_origin, forecast_arima), by = "forecast_origin") %>%
+    # left_join(arima_test %>% select(forecast_origin, forecast_arima), by = "forecast_origin") %>%
     mutate(horizon = h) %>%
     arrange(forecast_origin)
   
@@ -1394,8 +1379,8 @@ run_fixed_base_models_one_h <- function(data, h,
     fits = list(
       tvp = tvp_fit,
       ols = ols_fit,
-      ar3 = ar3_fit,
-      arima = arima_fit
+      ar3 = ar3_fit
+      # arima = arima_fit
     ),
     tvp_summary_train = tvp_train$summary,
     tvp_summary_test = tvp_test$summary,
@@ -2655,14 +2640,6 @@ for (hh in horizons) {
   )
   all_base_runs[[paste0("h", hh)]] <- base_run_h
   
-  # cat("\n--- COEFFICIENTS: horizon =", hh, "---\n")
-  # 
-  # cat("\nOLS coefficients:\n")
-  # print(coef(base_run_h$fits$ols))
-  # 
-  # cat("\nAR3 coefficients:\n")
-  # print(coef(base_run_h$fits$ar3))
-  
   ols_coefs_h <- extract_lm_coef_table(base_run_h$fits$ols, hh, "OLS")
   ar3_coefs_h <- extract_lm_coef_table(base_run_h$fits$ar3, hh, "AR3")
   
@@ -2943,15 +2920,6 @@ for (hh in horizons) {
     xgb_xai_h$interaction,
     subdir = paste0("xgb_base_h", hh)
   )
-  
-  # save_ale_plots_pdf(
-  #   xgb_rich_xai_h$ale,
-  #   subdir = paste0("xgb_rich_h", hh)
-  # )
-  # save_interaction_plots_pdf(
-  #   xgb_rich_xai_h$interaction,
-  #   subdir = paste0("xgb_rich_h", hh)
-  # )
 }
 
 ols_coefs_tbl <- bind_rows(all_ols_coefs)
