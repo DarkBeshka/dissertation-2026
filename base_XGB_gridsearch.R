@@ -53,71 +53,19 @@ learning_curves_dir <- "xgb_learning_curves"
 # =========================================================
 # 1. GRID FOR STANDALONE XGBOOST ONLY
 # =========================================================
-# Внимание: полная сетка может быть очень большой.
-# При необходимости сначала сузьте диапазоны.
-
-# xgb_grid <- tidyr::expand_grid(
-#   max_depth = c(2L, 3L),
-#   nrounds = c(100L, 200L),
-#   eta = c(0.01, 0.02, 0.03),
-#   #subsample = c(0.7, 0.8),
-#   colsample_bytree = c(0.5, 0.7, 0.8),
-#   min_child_weight = c(7, 10, 15),
-#   gamma = c(0.1, 0.3, 0.5, 1),
-#   lambda = c(2, 5, 10),
-#   alpha = c(0.1, 0.5, 1)
-#   #max_delta_step = c(0, 1, 3)
-# ) %>%
-#   mutate(config_id = row_number()) %>%
-#   select(config_id, everything())
-
-# !!!!СОХРАНЯЕМ h1
-# xgb_grid <- tidyr::expand_grid(
-#   max_depth = c(2L),
-#   nrounds = c(160L),  #точка после которой на test начинается деградация
-#   eta = c(0.01),
-#   #subsample = c(0.7, 0.8),
-#   colsample_bytree = c(0.5),
-#   min_child_weight = c(15),
-#   gamma = c(1),
-#   lambda = c(10),
-#   alpha = c(0.1),
-#   max_delta_step = c(0)
-# ) %>%
-#   mutate(config_id = row_number()) %>%
-#   select(config_id, everything())
-
-# !!!! СОХРАНЯЕМ h3
-# xgb_grid <- tidyr::expand_grid(
-#   max_depth = c(2L),
-#   nrounds = c(1000L),
-#   eta = c(0.005),
-#   #subsample = c(0.7, 0.8),
-#   colsample_bytree = c(0.8),
-#   min_child_weight = c(10),
-#   gamma = c(1.2),
-#   lambda = c(60),
-#   alpha = c(3),
-#   max_delta_step = c(3)
-# ) %>%
-#   mutate(config_id = row_number()) %>%
-#   select(config_id, everything())
-
-# !!!!! СОХРАНЯЕМ h6, h12
-# xgb_grid <- tidyr::expand_grid(
-#   max_depth = c(2L),
-#   nrounds = c(700L),
-#   eta = c(0.008),
-#   #subsample = c(0.7, 0.8),
-#   colsample_bytree = c(0.8),
-#   min_child_weight = c(15),
-#   gamma = c(1),
-#   lambda = c(40),
-#   alpha = c(6),
-#   max_delta_step = c(3)
-# ) %>%
-#   mutate(config_id = row_number()) %>%
-#   select(config_id, everything())
+xgb_grid <- tidyr::expand_grid(
+   max_depth = c(2L),
+   nrounds = c(160L),
+   eta = c(0.01),
+   colsample_bytree = c(0.5),
+   min_child_weight = c(15),
+   gamma = c(1),
+   lambda = c(10),
+   alpha = c(0.1),
+   max_delta_step = c(0)
+ ) %>%
+   mutate(config_id = row_number()) %>%
+   select(config_id, everything())
 
 # =========================================================
 # 2. DATA
@@ -154,7 +102,6 @@ remove_shock_periods <- function(df, shock_tbl) {
   df[keep_idx, , drop = FALSE]
 }
 
-# потом вырезаем шоковые периоды вместе с защитным буфером
 data <- remove_shock_periods(data, shock_periods_expanded) %>%
   arrange(date)
 
@@ -453,7 +400,6 @@ run_fixed_xgb_one_h <- function(data, predictors, h,
                                 max_depth = xgb_max_depth_default,
                                 nrounds = xgb_nrounds,
                                 eta = xgb_eta,
-                                #subsample = xgb_subsample,
                                 colsample_bytree = xgb_colsample_bytree,
                                 min_child_weight = xgb_min_child_weight,
                                 gamma = xgb_gamma,
@@ -474,7 +420,6 @@ run_fixed_xgb_one_h <- function(data, predictors, h,
     max_depth = max_depth,
     nrounds = nrounds,
     eta = eta,
-    #subsample = subsample,
     colsample_bytree = colsample_bytree,
     min_child_weight = min_child_weight,
     gamma = gamma,
@@ -533,7 +478,6 @@ append_config_to_metrics <- function(metrics_df, config_row) {
       max_depth,
       nrounds,
       eta,
-      #subsample,
       colsample_bytree,
       min_child_weight,
       gamma,
@@ -565,7 +509,6 @@ run_xgb_grid_search <- function(data,
       " | max_depth=", cfg$max_depth,
       " | nrounds=", cfg$nrounds,
       " | eta=", cfg$eta,
-      #" | subsample=", cfg$subsample,
       " | colsample_bytree=", cfg$colsample_bytree,
       " | min_child_weight=", cfg$min_child_weight,
       " | gamma=", cfg$gamma,
@@ -585,7 +528,6 @@ run_xgb_grid_search <- function(data,
           max_depth = cfg$max_depth[[1]],
           nrounds = cfg$nrounds[[1]],
           eta = cfg$eta[[1]],
-          #subsample = cfg$subsample[[1]],
           colsample_bytree = cfg$colsample_bytree[[1]],
           min_child_weight = cfg$min_child_weight[[1]],
           gamma = cfg$gamma[[1]],
